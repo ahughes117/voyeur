@@ -6,6 +6,7 @@
 
 require_once (__DIR__ . '/url_utils.php');
 require_once (__DIR__ . '/../data/memcached.php');
+require_once (__DIR__ . '/../../voyeur_config.php');
 
 /**
  * The Link Class, along with the parsing functionality
@@ -31,8 +32,11 @@ class Preview {
             //checking the url
             $url = Preview::polish_url($url);
 
-            //first hitting the cache
-            $cache_preview = $memcached->get_cached("url_" . $url);
+            //first hitting the cache, if enabled
+            if (Config::cache == Config::ENABLED)
+                $cache_preview = $memcached->get_cached("url_" . $url);
+            else
+                $cache_preview = false;
 
             if (!$cache_preview) {
                 //then fetching the main elements of the preview object
@@ -45,7 +49,8 @@ class Preview {
                 unset($preview->content);
 
                 //finally setting the preview in cache (making it expire after 15 mins)
-                $memcached->set_cached_exp("url_" . $url, serialize($preview), 900);
+                if (Config::cache == Config::ENABLED)
+                    $memcached->set_cached_exp("url_" . $url, serialize($preview), 900);
             } else {
                 $preview = unserialize($cache_preview);
             }
